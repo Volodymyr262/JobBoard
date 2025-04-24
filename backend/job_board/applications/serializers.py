@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Application
+from jobs.models import Job
 from jobs.serializers import JobSerializer
 from users.models import User
 
@@ -9,8 +10,8 @@ class ApplicantSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email']
 
 class ApplicationSerializer(serializers.ModelSerializer):
-    job = JobSerializer(read_only=True)
-    applicant = ApplicantSerializer(read_only=True)
+    job = serializers.PrimaryKeyRelatedField(queryset=Job.objects.all())
+    applicant = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Application
