@@ -2,10 +2,15 @@ from rest_framework import viewsets, permissions
 from .models import Job, Location, CompanyProfile
 from .serializers import JobSerializer, CompanyProfileSerializer, LocationSerializer
 from api.permissions import IsRecruiter, IsAdmin
+from .filters import JobFilter
+from django_filters.rest_framework import DjangoFilterBackend
+
 
 class JobViewSet(viewsets.ModelViewSet):
     serializer_class = JobSerializer
     queryset = Job.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = JobFilter
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
