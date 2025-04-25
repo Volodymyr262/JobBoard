@@ -15,11 +15,6 @@ def recruiter(db):
 def applicant(db):
     return User.objects.create_user(username="applicant1", password="pass123", role="applicant")
 
-@pytest.fixture
-def auth_client_recruiter(recruiter):
-    client = APIClient()
-    client.login(username="recruiter1", password="pass123")
-    return client
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)

@@ -20,3 +20,11 @@ class ApplicationSerializer(serializers.ModelSerializer):
             'status', 'applied_at'
         ]
         read_only_fields = ['applicant', 'status', 'applied_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['status_choices'] = [
+            {"value": choice[0], "label": choice[1]}
+            for choice in Application.ApplicationStatus.choices
+        ]
+        return data
