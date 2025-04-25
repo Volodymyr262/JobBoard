@@ -3,6 +3,7 @@ from rest_framework.test import APIClient
 from users.models import User
 from jobs.models import Location, CompanyProfile, Job
 from applications.models import Application
+from rest_framework_simplejwt.tokens import RefreshToken
 
 @pytest.fixture
 def recruiter(db):
@@ -20,10 +21,22 @@ def auth_client_recruiter(recruiter):
     client.login(username="recruiter1", password="pass123")
     return client
 
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return str(refresh.access_token)
+
 @pytest.fixture
 def auth_client_applicant(applicant):
     client = APIClient()
-    client.login(username="applicant1", password="pass123")
+    token = get_tokens_for_user(applicant)
+    client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+    return client
+
+@pytest.fixture
+def auth_client_recruiter(recruiter):
+    client = APIClient()
+    token = get_tokens_for_user(recruiter)
+    client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
     return client
 
 @pytest.fixture

@@ -8,9 +8,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.all()
 
     def get_permissions(self):
-        if self.action in ['create']:
-            return [IsApplicant()]
-        return [permissions.IsAuthenticated()]
+        return [IsApplicant()]
 
     def get_queryset(self):
         user = self.request.user
