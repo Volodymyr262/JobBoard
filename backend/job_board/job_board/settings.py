@@ -81,15 +81,13 @@ WSGI_APPLICATION = 'job_board.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'job_board_db',
-        'USER': 'postgres',
-        'PASSWORD': str(os.environ.get('DB_PASSWORD')),
-        'HOST': 'localhost',
-        'PORT': '5432',
-
+        'NAME': os.environ.get('DB_NAME', 'job_board_db'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', str(os.environ.get('DB_PASSWORD'))),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
-
 AUTH_USER_MODEL = 'users.User'
 
 # Password validation
@@ -117,6 +115,7 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
 }
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
