@@ -37,6 +37,7 @@ services:
       - DB_PASSWORD=password
       - DB_HOST=db
       - DB_PORT=5432
+      - DJANGO_SETTINGS_MODULE=job_board.settings
 
 volumes:
   postgres_data:

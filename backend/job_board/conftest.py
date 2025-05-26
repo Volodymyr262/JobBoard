@@ -1,9 +1,15 @@
+import os
+import django
 import pytest
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'job_board.settings')
+django.setup()  # ✅ must come BEFORE importing models
 from rest_framework.test import APIClient
 from users.models import User
 from jobs.models import Location, CompanyProfile, Job
 from applications.models import Application
 from rest_framework_simplejwt.tokens import RefreshToken
+
+
 
 @pytest.fixture
 def recruiter(db):
