@@ -12,6 +12,11 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     command: >
@@ -30,6 +35,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - redis
     environment:
       - DEBUG=1
       - DB_NAME=jobboard
@@ -37,6 +43,17 @@ services:
       - DB_PASSWORD=password
       - DB_HOST=db
       - DB_PORT=5432
+      - DJANGO_SETTINGS_MODULE=job_board.settings
+
+  worker:
+    build: .
+    command: celery -A job_board worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
       - DJANGO_SETTINGS_MODULE=job_board.settings
 
 volumes:

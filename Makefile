@@ -1,17 +1,22 @@
-.PHONY: up bash test migrate createsuperuser
+.PHONY: up down bash test migrate
 
-# Start Docker Compose
+# Start Docker Compose and build if needed
 up:
 	docker-compose up --build
 
-# Open bash shell inside web container
+# Stop and remove containers, networks, volumes
+down:
+	docker-compose down
+
+# Open bash shell in the web container
 bash:
 	docker-compose exec web bash
 
-# Run Django tests
+# Run Django tests using pytest
 test:
 	docker-compose exec web pytest
 
-# Run DB migrations
+# Run database migrations
 migrate:
 	docker-compose exec web python manage.py migrate
+

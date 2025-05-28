@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from .models import Application
 from .serializers import ApplicationSerializer
 from api.permissions import IsApplicant, IsRecruiter
-from notifications.email_service import send_status_update_email
+from notifications.tasks import send_application_status_email
+
 
 class ApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = ApplicationSerializer
@@ -44,11 +45,11 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         application.status = new_status
         application.save()
 
-        # ️ Send email notification to applicant
-        send_status_update_email(
-            to_email=application.applicant.email,
-            job_title=application.job.title,
-            new_status=application.get_status_display(),
+        #TO DO ️ Send email notification to applicant
+        send_application_status_email.delay(
+            to_email='user@example.com',
+            subject='Application Received',
+            message='Thanks for applying at CoolCompany!'
         )
 
         return Response(
