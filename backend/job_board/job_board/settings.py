@@ -11,10 +11,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 from pathlib import Path
+import logging
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+logging.basicConfig(level=logging.DEBUG)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -30,9 +33,21 @@ ALLOWED_HOSTS = []
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+MAIL_HOST_USER = os.getenv('MAILTRAP_USER')
+EMAIL_HOST_PASSWORD = os.getenv('MAILTRAP_PASS')
+EMAIL_PORT = '2525'
+
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'noreply@jobboard.com'
 # Application definition
 
 INSTALLED_APPS = [
+    'notifications',
     'users',
     'api',
     'applications',
@@ -110,7 +125,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For now to see emails printed in terminal
 
 
 REST_FRAMEWORK = {

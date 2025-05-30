@@ -44,7 +44,8 @@ services:
       - DB_HOST=db
       - DB_PORT=5432
       - DJANGO_SETTINGS_MODULE=job_board.settings
-
+    env_file:
+      - .env
   worker:
     build: .
     command: celery -A job_board worker --loglevel=info
