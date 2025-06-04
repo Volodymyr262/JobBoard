@@ -14,7 +14,7 @@ bash:
 
 # Run Django tests using pytest
 test:
-	docker-compose exec web pytest
+	docker-compose exec web pytest -v
 
 # Run database migrations
 migrate:

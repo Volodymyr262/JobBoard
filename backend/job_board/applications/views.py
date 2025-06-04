@@ -45,7 +45,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         application.status = new_status
         application.save()
 
-        #TO DO ️ Send email notification to applicant
+        # Send email notification to applicant
         send_application_status_email.delay(
             to_email='user@example.com',
             subject='Application Received',

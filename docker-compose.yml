@@ -45,7 +45,7 @@ services:
       - DB_PORT=5432
       - DJANGO_SETTINGS_MODULE=job_board.settings
     env_file:
-      - .env
+      - var.env
   worker:
     build: .
     command: celery -A job_board worker --loglevel=info
@@ -54,6 +54,8 @@ services:
     depends_on:
       - db
       - redis
+    env_file:
+      - var.env
     environment:
       - DJANGO_SETTINGS_MODULE=job_board.settings
 
