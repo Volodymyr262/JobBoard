@@ -1,10 +1,11 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Application
+from .models import Application, AutoResponse
 from .serializers import ApplicationSerializer
 from api.permissions import IsApplicant, IsRecruiter
 from notifications.tasks import send_application_status_email
+
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
@@ -27,7 +28,26 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return Application.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(applicant=self.request.user)
+        application = serializer.save(applicant=self.request.user)
+        job = application.job
+
+        try:
+            auto = AutoResponse.objects.get(job=job, event="on_apply")
+            subject = auto.subject
+            message = auto.body
+        except AutoResponse.DoesNotExist:
+            subject = f"Thanks for applying to {job.title}!"
+            message = (
+                f"Hi {application.applicant.username},\n\n"
+                f"Thanks for applying to '{job.title}' at {job.company.name}.\n"
+                "We'll review your application and get back to you soon!"
+            )
+
+        send_application_status_email.delay(
+            to_email=application.applicant.email,
+            subject=subject,
+            message=message
+        )
 
     @action(detail=True, methods=['post'], permission_classes=[IsRecruiter])
     def update_status(self, request, pk=None):
@@ -41,15 +61,25 @@ class ApplicationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        #  Update and save
         application.status = new_status
         application.save()
 
-        # Send email notification to applicant
+        # Load AutoResponse
+        try:
+            auto = AutoResponse.objects.get(job=application.job, event="on_status_change")
+            subject = auto.subject
+            message = auto.body
+        except AutoResponse.DoesNotExist:
+            subject = f"Your application status has been updated to {new_status.title()}"
+            message = (
+                f"Hi {application.applicant.username},\n\n"
+                f"The status of your application for '{application.job.title}' has been changed to '{new_status}'."
+            )
+
         send_application_status_email.delay(
-            to_email='user@example.com',
-            subject='Application Received',
-            message='Thanks for applying at CoolCompany!'
+            to_email=application.applicant.email,
+            subject=subject,
+            message=message
         )
 
         return Response(
