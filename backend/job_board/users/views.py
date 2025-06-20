@@ -7,6 +7,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.conf import settings
+from .utils import generate_verification_link
 
 User = get_user_model()
 
@@ -47,3 +48,49 @@ class ConfirmPasswordResetView(APIView):
         user.set_password(new_password)
         user.save()
         return Response({"message": "Password has been reset."}, status=status.HTTP_200_OK)
+
+
+class RegisterView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request):
+        data = request.data
+        user = User.objects.create_user(
+            username=data['username'],
+            email=data['email'],
+            password=data['password'],
+            role=data.get('role', 'applicant'),
+        )
+        user.is_active = True  #let them login, but control via `is_email_verified`
+        user.save()
+
+        link = generate_verification_link(request, user)
+
+        send_mail(
+            subject="Verify your JobBoard account",
+            message=f"Click to verify your account: {link}",
+            from_email="noreply@jobboard.com",
+            recipient_list=[user.email],
+        )
+
+        return Response({"message": "User created. Please check your email to verify your account."}, status=201)
+
+
+class VerifyEmailView(APIView):
+    def get(self, request):
+        uidb64 = request.query_params.get('uid')
+        token = request.query_params.get('token')
+
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = User.objects.get(pk=uid)
+        except Exception:
+            return Response({"error": "Invalid link"}, status=400)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({"error": "Invalid or expired token"}, status=400)
+
+        user.is_email_verified = True
+        user.save()
+        return Response({"message": "Email verified!"}, status=200)

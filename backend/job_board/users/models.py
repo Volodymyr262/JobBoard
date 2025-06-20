@@ -8,7 +8,7 @@ class User(AbstractUser):
         APPLICANT = 'applicant', 'Applicant'
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.APPLICANT)
-
+    is_email_verified = models.BooleanField(default=False)
     def is_admin(self):
         return self.role == self.Role.ADMIN
 
