@@ -1,6 +1,5 @@
 import pytest
 from applications.models import Application, AutoResponse
-from notifications.tasks import send_application_status_email
 from unittest.mock import patch
 
 

@@ -1,3 +1,5 @@
+from click import password_option
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,6 +9,8 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from .utils import generate_verification_link
 
 User = get_user_model()
@@ -95,3 +99,19 @@ class VerifyEmailView(APIView):
         user.save()
         return Response({"message": "Email verified!"}, status=200)
 
+
+class LoginView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get('password')
+
+        user = get_object_or_404(User, email=email)
+
+        if not user.check_password(password):
+            return Response({"error": "Invalid credentials"}, status=401)
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+        })

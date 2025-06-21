@@ -1,8 +1,4 @@
-import pytest
-from rest_framework.test import APIClient
-from users.models import User
 from jobs.models import Job, Location, CompanyProfile
-
 
 
 def test_recruiter_can_create_job(auth_client_recruiter, location):
