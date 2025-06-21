@@ -3,8 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Application, AutoResponse
 from .serializers import ApplicationSerializer
-from api.permissions import IsApplicant, IsRecruiter
+from api.permissions import IsApplicant, IsRecruiter, IsEmailVerified
 from notifications.tasks import send_application_status_email
+
 
 
 
@@ -14,10 +15,10 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "update_status":
-            return [IsRecruiter()]
+            return [IsRecruiter(), IsEmailVerified()]
         elif self.action == "create":
-            return [IsApplicant()]
-        return [permissions.IsAuthenticated()]
+            return [IsApplicant(), IsEmailVerified()]
+        return [permissions.IsAuthenticated(), IsEmailVerified()]
 
     def get_queryset(self):
         user = self.request.user

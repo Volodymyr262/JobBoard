@@ -94,3 +94,4 @@ class VerifyEmailView(APIView):
         user.is_email_verified = True
         user.save()
         return Response({"message": "Email verified!"}, status=200)
+

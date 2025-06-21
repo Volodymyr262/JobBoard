@@ -13,13 +13,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 @pytest.fixture
 def recruiter(db):
-    user = User.objects.create_user(username="recruiter1", password="pass123", role="recruiter")
+    user = User.objects.create_user(username="recruiter1", password="pass123", role="recruiter", is_email_verified=True)
     CompanyProfile.objects.create(name="Test Co", owner=user)
     return user
 
 @pytest.fixture
 def applicant(db):
-    return User.objects.create_user(username="applicant1", password="pass123", role="applicant")
+    return User.objects.create_user(username="applicant1", password="pass123", role="applicant", is_email_verified=True)
 
 
 def get_tokens_for_user(user):

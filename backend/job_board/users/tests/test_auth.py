@@ -1,21 +1,14 @@
-from http.client import responses
-
 import pytest
-from users.models import User
 from rest_framework.test import APIClient
-
-@pytest.fixture
-def create_user(db):
-    return User.objects.create_user(username="jwtuser", password="jwtpass123", role="applicant")
 
 @pytest.fixture
 def api_client():
     return APIClient()
 
-def test_login_user(api_client, create_user):
+def test_login_user(api_client, recruiter):
     response = api_client.post('/api/token/', {
-        'username': create_user.username,
-        'password': 'jwtpass123',
+        'username': recruiter.username,
+        'password': 'pass123',
     }, format='json')
 
     assert response.status_code == 200
@@ -23,20 +16,20 @@ def test_login_user(api_client, create_user):
     assert 'refresh' in response.data
 
 
-def test_login_wrong_password(api_client, create_user):
+def test_login_wrong_password(api_client, recruiter):
     response = api_client.post('/api/token/', {
-        'username': create_user.username,
+        'username': recruiter.username,
         'password': 'wrondg_pass',
     }, format='json')
 
     assert response.status_code == 401
 
 
-def test_access_protected_route(api_client, create_user):
+def test_access_protected_route(api_client, recruiter):
     # Step 1: Log in
     response = api_client.post('/api/token/', {
-        'username': create_user.username,
-        'password': 'jwtpass123',
+        'username': recruiter.username,
+        'password': 'pass123',
     }, format='json')
 
     access_token = response.data['access']
