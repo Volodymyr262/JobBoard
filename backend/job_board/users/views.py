@@ -66,7 +66,7 @@ class RegisterView(APIView):
             password=data['password'],
             role=data.get('role', 'applicant'),
         )
-        user.is_active = True  #let them login, but control via `is_email_verified`
+        user.is_active = True
         user.save()
 
         link = generate_verification_link(request, user)
