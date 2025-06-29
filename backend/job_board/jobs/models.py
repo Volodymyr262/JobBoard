@@ -49,3 +49,16 @@ class Job(models.Model):
 
     def __str__(self):
         return f"{self.title} @ {self.company.name}"
+
+
+class SavedJob(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_jobs')
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='saved_by')
+    saved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'job')
+        ordering = ['-saved_at']
+
+    def __str__(self):
+        return f"{self.user.username} saved {self.job.title}"

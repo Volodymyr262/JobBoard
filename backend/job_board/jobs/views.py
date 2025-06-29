@@ -1,10 +1,12 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions
-from .models import Job, Location, CompanyProfile
-from .serializers import JobSerializer, CompanyProfileSerializer, LocationSerializer
+from .models import Job, Location, CompanyProfile, SavedJob
+from .serializers import JobSerializer, CompanyProfileSerializer, LocationSerializer, SavedJobSerializer
 from api.permissions import IsRecruiter, IsAdmin
 from .filters import JobFilter
 from django_filters.rest_framework import DjangoFilterBackend
-
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 class JobViewSet(viewsets.ModelViewSet):
     serializer_class = JobSerializer
@@ -47,3 +49,25 @@ class LocationViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
     permission_classes = [permissions.AllowAny]
+
+
+class SavedJobViewSet(viewsets.ModelViewSet):
+    serializer_class = SavedJobSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SavedJob.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        job_id = self.request.data.get('job')
+        job = get_object_or_404(Job, id=job_id)
+        serializer.save(user=self.request.user, job=job)
+
+    @action(detail=True, methods=['delete'], url_path='unsave')
+    def unsave_job(self, request, pk=None):
+        job = get_object_or_404(Job, id=pk)
+        saved = SavedJob.objects.filter(user=request.user, job=job).first()
+        if saved:
+            saved.delete()
+            return Response(status=204)
+        return Response({"detail": "Not saved."}, status=400)

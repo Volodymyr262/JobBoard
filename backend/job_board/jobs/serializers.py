@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Job, CompanyProfile, Location
+from .models import Job, CompanyProfile, Location, SavedJob
+
 
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -40,3 +41,10 @@ class JobSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+
+class SavedJobSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = SavedJob
+        fields = ['id', 'job', 'saved_at']

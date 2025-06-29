@@ -4,10 +4,6 @@ from django.core import mail
 from users.models import User
 
 
-@pytest.fixture
-def api_client():
-    return APIClient()
-
 def test_login_user(api_client, recruiter):
     response = api_client.post('/api/token/', {
         'username': recruiter.username,

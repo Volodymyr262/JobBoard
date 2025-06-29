@@ -8,7 +8,6 @@ from notifications.tasks import send_application_status_email
 
 
 
-
 class ApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = ApplicationSerializer
     queryset = Application.objects.all()
