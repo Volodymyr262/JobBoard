@@ -52,7 +52,14 @@ SITE_ID = 1  # Required by django-allauth
 
 REST_USE_JWT = True
 
+ELASTICSEARCH_DSL = {
+    'default': {
+        'hosts': os.getenv('ELASTICSEARCH_DSL_HOSTS', 'http://localhost:9200')
+    }
+}
+
 INSTALLED_APPS = [
+    'django_elasticsearch_dsl',
     'django.contrib.sites',
     'allauth',
     'allauth.account',

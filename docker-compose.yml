@@ -17,17 +17,33 @@ services:
     ports:
       - "6379:6379"
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
   web:
     build: .
     command: >
       sh -c "
-        echo '📡 Waiting for Postgres...';
-        while ! nc -z db 5432; do
-          sleep 1;
-        done;
-        echo '🚀 Postgres is up! Running migrations and server...';
-        python manage.py migrate &&
-        python manage.py runserver 0.0.0.0:8000
+      echo '📡 Waiting for Postgres and Elasticsearch...';
+      while ! nc -z db 5432; do sleep 1; done;
+      while ! nc -z elasticsearch 9200; do sleep 1; done;
+      echo '🚀 Starting Django server...';
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000
       "
     volumes:
       - .:/app
@@ -36,6 +52,7 @@ services:
     depends_on:
       - db
       - redis
+      - elasticsearch
     environment:
       - DEBUG=1
       - DB_NAME=jobboard
@@ -43,9 +60,11 @@ services:
       - DB_PASSWORD=password
       - DB_HOST=db
       - DB_PORT=5432
+      - ELASTICSEARCH_DSL_HOSTS=http://elasticsearch:9200
       - DJANGO_SETTINGS_MODULE=job_board.settings
     env_file:
       - .env
+
   worker:
     build: .
     command: celery -A job_board worker --loglevel=info
@@ -54,10 +73,11 @@ services:
     depends_on:
       - db
       - redis
-    env_file:
-      - .env
     environment:
       - DJANGO_SETTINGS_MODULE=job_board.settings
+    env_file:
+      - .env
 
 volumes:
   postgres_data:
+  elasticsearch_data:

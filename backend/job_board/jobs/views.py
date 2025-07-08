@@ -1,5 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions
+from rest_framework.views import APIView
+from jobs.documents import JobDocument
 from .models import Job, Location, CompanyProfile, SavedJob
 from .serializers import JobSerializer, CompanyProfileSerializer, LocationSerializer, SavedJobSerializer
 from api.permissions import IsRecruiter, IsAdmin
@@ -71,3 +73,15 @@ class SavedJobViewSet(viewsets.ModelViewSet):
             saved.delete()
             return Response(status=204)
         return Response({"detail": "Not saved."}, status=400)
+
+
+
+class JobSearchView(APIView):
+    def get(self, request):
+        query = request.GET.get("q")
+        if query:
+            search = JobDocument.search().query("multi_match", query=query, fields=["title", "description"])
+            results = search.execute()
+            jobs = [hit.to_dict() for hit in results]
+            return Response(jobs)
+        return Response([])
