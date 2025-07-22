@@ -9,6 +9,7 @@ from .filters import JobFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from elasticsearch_dsl import Q
 
 class JobViewSet(viewsets.ModelViewSet):
     serializer_class = JobSerializer
@@ -78,10 +79,32 @@ class SavedJobViewSet(viewsets.ModelViewSet):
 
 class JobSearchView(APIView):
     def get(self, request):
-        query = request.GET.get("q")
-        if query:
-            search = JobDocument.search().query("multi_match", query=query, fields=["title", "description"])
-            results = search.execute()
-            jobs = [hit.to_dict() for hit in results]
-            return Response(jobs)
-        return Response([])
+        query = request.GET.get("q", "")
+        if not query:
+            return Response([])
+
+        # Main search (fuzzy + autocomplete)
+        main_query = Q("multi_match", query=query, fields=["title^3", "description"], fuzziness="AUTO") | \
+                     Q("match_phrase_prefix", title={"query": query, "boost": 2})
+
+        search = JobDocument.search().query(main_query)
+        results = search[:10].execute()
+
+        # Suggestions
+        suggest_response = JobDocument.search().suggest(
+            "job-suggest",
+            query,
+            completion={"field": "suggest", "fuzzy": {"fuzziness": 2}}
+        ).execute()
+
+        suggestions = []
+        try:
+            suggest_options = suggest_response.suggest["job-suggest"][0].options
+            suggestions = [option.text for option in suggest_options]
+        except (KeyError, IndexError):
+            pass
+
+        return Response({
+            "results": [hit.to_dict() for hit in results],
+            "suggestions": suggestions,
+        })
