@@ -10,6 +10,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from elasticsearch_dsl import Q
+from django.core.cache import cache
+from hashlib import sha256
 
 class JobViewSet(viewsets.ModelViewSet):
     serializer_class = JobSerializer
@@ -79,32 +81,45 @@ class SavedJobViewSet(viewsets.ModelViewSet):
 
 class JobSearchView(APIView):
     def get(self, request):
-        query = request.GET.get("q", "")
-        if not query:
-            return Response([])
+        query = request.GET.get("q", "").strip()
 
-        # Main search (fuzzy + autocomplete)
+        if not query:
+            return Response({"results": [], "suggestions": []})
+
+        # Create unique cache key
+        cache_key = f"job-search:{sha256(query.encode()).hexdigest()}"
+
+        # Try fetching from cache
+        cached = cache.get(cache_key)
+        if cached:
+            return Response(cached)  # ✅ FAST: response served from Redis
+
+        # No cache hit, run ES queries
         main_query = Q("multi_match", query=query, fields=["title^3", "description"], fuzziness="AUTO") | \
                      Q("match_phrase_prefix", title={"query": query, "boost": 2})
 
         search = JobDocument.search().query(main_query)
         results = search[:10].execute()
 
-        # Suggestions
         suggest_response = JobDocument.search().suggest(
-            "job-suggest",
-            query,
+            "job-suggest", query,
             completion={"field": "suggest", "fuzzy": {"fuzziness": 2}}
         ).execute()
 
         suggestions = []
-        try:
-            suggest_options = suggest_response.suggest["job-suggest"][0].options
-            suggestions = [option.text for option in suggest_options]
-        except (KeyError, IndexError):
-            pass
+        if hasattr(suggest_response, "suggest") and suggest_response.suggest:
+            try:
+                suggest_options = suggest_response.suggest["job-suggest"][0].options
+                suggestions = [opt.text for opt in suggest_options]
+            except (KeyError, IndexError, AttributeError, TypeError):
+                suggestions = []
 
-        return Response({
+        response_data = {
             "results": [hit.to_dict() for hit in results],
-            "suggestions": suggestions,
-        })
+            "suggestions": suggestions
+        }
+
+        # Cache the response for future queries
+        cache.set(cache_key, response_data, timeout=60 * 5)
+
+        return Response(response_data)

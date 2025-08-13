@@ -2,11 +2,12 @@ import pytest
 from jobs.models import Job, Location, CompanyProfile
 from django.urls import reverse
 import time
+from jobs.documents import JobDocument
 
 
 @pytest.mark.django_db
 def test_fuzzy_search_matches_typos(auth_client_applicant, recruiter, location):
-    Job.objects.create(
+    job = Job.objects.create(
         title="Python Developer",
         company=recruiter.company_profile,
         description="Backend role with Django",
@@ -16,6 +17,7 @@ def test_fuzzy_search_matches_typos(auth_client_applicant, recruiter, location):
         experience_level="mid",
         status="approved"
     )
+    JobDocument().update(job, refresh=True, action='index')
 
     # Give time for ES to index (or use refresh=True in real app)
     time.sleep(1)
@@ -29,7 +31,7 @@ def test_fuzzy_search_matches_typos(auth_client_applicant, recruiter, location):
 
 @pytest.mark.django_db
 def test_search_suggestions_work(auth_client_applicant, recruiter, location):
-    Job.objects.create(
+    job = Job.objects.create(
         title="JavaScript Engineer",
         company=recruiter.company_profile,
         description="Frontend wizard wanted",
@@ -39,7 +41,7 @@ def test_search_suggestions_work(auth_client_applicant, recruiter, location):
         experience_level="senior",
         status="approved"
     )
-
+    JobDocument().update(job, refresh=True, action='index')
     time.sleep(1)
 
     response = auth_client_applicant.get("/api/search/?q=javacript")
@@ -51,7 +53,7 @@ def test_search_suggestions_work(auth_client_applicant, recruiter, location):
 
 @pytest.mark.django_db
 def test_autocomplete_prefix_matches(auth_client_applicant, recruiter, location):
-    Job.objects.create(
+    job = Job.objects.create(
         title="DevOps Engineer",
         company=recruiter.company_profile,
         description="AWS + Docker + Python",
@@ -61,7 +63,7 @@ def test_autocomplete_prefix_matches(auth_client_applicant, recruiter, location)
         experience_level="senior",
         status="approved"
     )
-
+    JobDocument().update(job, refresh=True, action='index')
     time.sleep(1)
 
     response = auth_client_applicant.get("/api/search/?q=devop")

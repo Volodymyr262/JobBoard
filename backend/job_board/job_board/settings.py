@@ -58,6 +58,16 @@ ELASTICSEARCH_DSL = {
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/1",  # db 1 for caching (separate from Celery)
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
 INSTALLED_APPS = [
     'django_elasticsearch_dsl',
     'django.contrib.sites',
