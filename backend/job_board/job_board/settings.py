@@ -69,6 +69,7 @@ CACHES = {
 }
 
 INSTALLED_APPS = [
+    'corsheaders',
     'django_elasticsearch_dsl',
     'django.contrib.sites',
     'allauth',
@@ -94,6 +95,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -120,6 +122,13 @@ TEMPLATES = [
         },
     },
 ]
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',   # React local dev
+    'http://127.0.0.1:3000',   # sometimes needed
+]
+
 
 WSGI_APPLICATION = 'job_board.wsgi.application'
 
