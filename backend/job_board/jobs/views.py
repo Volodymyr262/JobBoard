@@ -12,6 +12,8 @@ from rest_framework.response import Response
 from elasticsearch_dsl import Q
 from django.core.cache import cache
 from hashlib import sha256
+from rest_framework.pagination import PageNumberPagination
+
 
 class JobViewSet(viewsets.ModelViewSet):
     serializer_class = JobSerializer
@@ -78,48 +80,71 @@ class SavedJobViewSet(viewsets.ModelViewSet):
         return Response({"detail": "Not saved."}, status=400)
 
 
+class JobSearchPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 50
 
 class JobSearchView(APIView):
     def get(self, request):
         query = request.GET.get("q", "").strip()
+        page = int(request.GET.get("page", 1))
+        page_size = int(request.GET.get("page_size", 10))
 
-        if not query:
-            return Response({"results": [], "suggestions": []})
-
-        # Create unique cache key
-        cache_key = f"job-search:{sha256(query.encode()).hexdigest()}"
-
-        # Try fetching from cache
+        # Unique cache key (query + page)
+        cache_key = f"job-search:{sha256(f'{query}:{page}:{page_size}'.encode()).hexdigest()}"
         cached = cache.get(cache_key)
         if cached:
-            return Response(cached)  # ✅ FAST: response served from Redis
+            return Response(cached)
 
-        # No cache hit, run ES queries
-        main_query = Q("multi_match", query=query, fields=["title^3", "description"], fuzziness="AUTO") | \
-                     Q("match_phrase_prefix", title={"query": query, "boost": 2})
+        if not query:
+            response_data = {
+                "query": query,
+                "results": [],
+                "suggestions": [],
+                "total": 0,
+                "page": page,
+                "page_size": page_size,
+            }
+            return Response(response_data)
+
+        # 🔎 Build search query
+        main_query = (
+            Q("multi_match", query=query, fields=["title^3", "description"], fuzziness="AUTO")
+            | Q("match_phrase_prefix", title={"query": query, "boost": 2})
+        )
 
         search = JobDocument.search().query(main_query)
-        results = search[:10].execute()
 
-        suggest_response = JobDocument.search().suggest(
-            "job-suggest", query,
-            completion={"field": "suggest", "fuzzy": {"fuzziness": 2}}
-        ).execute()
+        #  Apply pagination manually
+        start = (page - 1) * page_size
+        end = start + page_size
+        results = search[start:end].execute()
+
+        #  Suggestions
+        suggest_response = (
+            JobDocument.search()
+            .suggest("job-suggest", query, completion={"field": "suggest", "fuzzy": {"fuzziness": 2}})
+            .execute()
+        )
 
         suggestions = []
-        if hasattr(suggest_response, "suggest") and suggest_response.suggest:
+        if hasattr(suggest_response, "suggest") and "job-suggest" in suggest_response.suggest:
             try:
-                suggest_options = suggest_response.suggest["job-suggest"][0].options
-                suggestions = [opt.text for opt in suggest_options]
-            except (KeyError, IndexError, AttributeError, TypeError):
+                suggest_opts = suggest_response.suggest["job-suggest"][0].options
+                suggestions = [opt.text for opt in suggest_opts]
+            except Exception:
                 suggestions = []
 
+        # Unified API contract
         response_data = {
+            "query": query,
             "results": [hit.to_dict() for hit in results],
-            "suggestions": suggestions
+            "suggestions": suggestions,
+            "total": results.hits.total.value if hasattr(results.hits.total, "value") else results.hits.total,
+            "page": page,
+            "page_size": page_size,
         }
 
-        # Cache the response for future queries
         cache.set(cache_key, response_data, timeout=60 * 5)
-
         return Response(response_data)

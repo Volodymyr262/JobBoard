@@ -82,3 +82,14 @@ def test_no_results_no_suggestions(auth_client_applicant):
 
     assert data["results"] == []
     assert data["suggestions"] == []
+
+
+@pytest.mark.django_db
+def test_api_contract_always_returns_same_keys(client):
+    response = client.get("/api/search/?q=asdfgh")
+    data = response.json()
+
+    assert set(data.keys()) == {"query", "results", "suggestions", "total", "page", "page_size"}
+    assert isinstance(data["results"], list)
+    assert isinstance(data["suggestions"], list)
+    assert isinstance(data["total"], int)
