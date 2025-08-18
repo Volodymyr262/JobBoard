@@ -36,6 +36,8 @@ class Job(models.Model):
         MID = 'mid', 'Mid'
         SENIOR = 'senior', 'Senior'
 
+    class Meta:
+        ordering = ['-created_at', '-id']  # deterministic
     title = models.CharField(max_length=255)
     company = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE, related_name='jobs')
     description = models.TextField()

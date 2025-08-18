@@ -46,8 +46,12 @@ def test_applicant_can_filter_jobs(auth_client_applicant, recruiter, location):
 
     response = auth_client_applicant.get("/api/jobs/?location__city=Warsaw&min_salary=3000")
     assert response.status_code == 200
-    assert len(response.data) >= 1
-    assert response.data[0]["title"] == "Python Dev"
+
+    # ✅ Access paginated results
+    results = response.json()["results"]
+
+    assert len(results) >= 1
+    assert results[0]["title"] == "Python Dev"
 
 
 def test_job_creation_missing_required_fields(auth_client_recruiter):
@@ -73,4 +77,9 @@ def test_unapproved_jobs_hidden(auth_client_applicant, recruiter, location):
 
     response = auth_client_applicant.get("/api/jobs/")
     assert response.status_code == 200
-    assert all(job["status"] == "approved" for job in response.data)
+
+    # Access paginated results
+    results = response.json()["results"]
+
+    # Ensure only approved jobs are visible
+    assert all(job["status"] == "approved" for job in results)

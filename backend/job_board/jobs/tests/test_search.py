@@ -89,7 +89,6 @@ def test_api_contract_always_returns_same_keys(client):
     response = client.get("/api/search/?q=asdfgh")
     data = response.json()
 
-    assert set(data.keys()) == {"query", "results", "suggestions", "total", "page", "page_size"}
+    assert set(data.keys()) == {"count", "next", "previous", "results", "suggestions"}
     assert isinstance(data["results"], list)
     assert isinstance(data["suggestions"], list)
-    assert isinstance(data["total"], int)

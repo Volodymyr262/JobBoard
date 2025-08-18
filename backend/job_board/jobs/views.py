@@ -91,60 +91,60 @@ class JobSearchView(APIView):
         page = int(request.GET.get("page", 1))
         page_size = int(request.GET.get("page_size", 10))
 
-        # Unique cache key (query + page)
+        if not query:
+            return Response({
+                "results": [],
+                "suggestions": [],
+                "count": 0,
+                "next": None,
+                "previous": None
+            })
+
         cache_key = f"job-search:{sha256(f'{query}:{page}:{page_size}'.encode()).hexdigest()}"
         cached = cache.get(cache_key)
         if cached:
             return Response(cached)
 
-        if not query:
-            response_data = {
-                "query": query,
-                "results": [],
-                "suggestions": [],
-                "total": 0,
-                "page": page,
-                "page_size": page_size,
-            }
-            return Response(response_data)
-
-        # 🔎 Build search query
+        # Build ES query
         main_query = (
-            Q("multi_match", query=query, fields=["title^3", "description"], fuzziness="AUTO")
-            | Q("match_phrase_prefix", title={"query": query, "boost": 2})
+            Q("multi_match", query=query, fields=["title^3", "description"], fuzziness="AUTO") |
+            Q("match_phrase_prefix", title={"query": query, "boost": 2})
         )
 
         search = JobDocument.search().query(main_query)
 
-        #  Apply pagination manually
+        # Count total results
+        total = search.count()
+
+        # Apply pagination (Elasticsearch slicing)
         start = (page - 1) * page_size
         end = start + page_size
         results = search[start:end].execute()
 
-        #  Suggestions
-        suggest_response = (
-            JobDocument.search()
-            .suggest("job-suggest", query, completion={"field": "suggest", "fuzzy": {"fuzziness": 2}})
-            .execute()
+        # Suggestions
+        suggest_response = JobDocument.search().suggest(
+            "job-suggest", query,
+            completion={"field": "suggest", "fuzzy": {"fuzziness": 2}}
+        ).execute()
+
+        suggestions = (
+            [opt.text for opt in suggest_response.suggest["job-suggest"][0].options]
+            if hasattr(suggest_response, "suggest") and "job-suggest" in suggest_response.suggest
+            else []
         )
 
-        suggestions = []
-        if hasattr(suggest_response, "suggest") and "job-suggest" in suggest_response.suggest:
-            try:
-                suggest_opts = suggest_response.suggest["job-suggest"][0].options
-                suggestions = [opt.text for opt in suggest_opts]
-            except Exception:
-                suggestions = []
+        # Build paginated response manually
+        next_page = request.build_absolute_uri(f"?q={query}&page={page+1}&page_size={page_size}") if end < total else None
+        prev_page = request.build_absolute_uri(f"?q={query}&page={page-1}&page_size={page_size}") if page > 1 else None
 
-        # Unified API contract
         response_data = {
-            "query": query,
+            "count": total,
+            "next": next_page,
+            "previous": prev_page,
             "results": [hit.to_dict() for hit in results],
             "suggestions": suggestions,
-            "total": results.hits.total.value if hasattr(results.hits.total, "value") else results.hits.total,
-            "page": page,
-            "page_size": page_size,
         }
 
+        # Cache result
         cache.set(cache_key, response_data, timeout=60 * 5)
         return Response(response_data)

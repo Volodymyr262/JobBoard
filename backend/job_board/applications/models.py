@@ -9,6 +9,8 @@ class Application(models.Model):
         SHORTLISTED = 'shortlisted', 'Shortlisted'
         REJECTED = 'rejected', 'Rejected'
 
+    class Meta:
+        ordering = ['-applied_at', '-id']  # deterministic
     applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='applications')
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='applications')
     resume = models.FileField(upload_to='resumes/', blank=True, null=True)
