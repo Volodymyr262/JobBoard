@@ -13,6 +13,7 @@ from elasticsearch_dsl import Q
 from django.core.cache import cache
 from hashlib import sha256
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 
 class JobViewSet(viewsets.ModelViewSet):
@@ -41,6 +42,7 @@ class JobViewSet(viewsets.ModelViewSet):
 
 
 class CompanyProfileViewSet(viewsets.ModelViewSet):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     serializer_class = CompanyProfileSerializer
     permission_classes = [IsRecruiter]
     queryset = CompanyProfile.objects.all()

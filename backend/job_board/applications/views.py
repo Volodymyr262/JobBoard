@@ -5,10 +5,11 @@ from .models import Application, AutoResponse
 from .serializers import ApplicationSerializer
 from api.permissions import IsApplicant, IsRecruiter, IsEmailVerified
 from notifications.tasks import send_application_status_email
-
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     serializer_class = ApplicationSerializer
     queryset = Application.objects.all()
 
