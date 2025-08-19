@@ -47,6 +47,8 @@ services:
       "
     volumes:
       - .:/app
+      - ./media:/app/backend/job_board/media
+      - ./staticfiles:/app/backend/job_board/staticfiles
     ports:
       - "8000:8000"
     depends_on:
