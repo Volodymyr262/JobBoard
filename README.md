@@ -1,4 +1,4 @@
-# 🧠 JobBoard — Modern Django + Elasticsearch Job Portal
+# 🧠 JobBoard — Modern Django Job Portal
 
 A full-featured **Job Board Platform** built with **Django REST Framework**, **Elasticsearch**, **Redis caching**, **Celery**, and **JWT Authentication**.  
 Supports recruiters posting jobs, applicants applying & saving jobs, full-text search with typo tolerance + autocomplete, email notifications, and more.
